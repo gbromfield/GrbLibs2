@@ -77,6 +77,7 @@ public class TL1AOMessage extends TL1OutputMessage {
     	newBuffer.write(newATAG.getBytes());
     	newBuffer.write(ba, _atagIndex + _atagLength, length - (_atagIndex + _atagLength));
     	_atag = newATAG;
+    	_atagLength = _atag.length();
     	_buffer = newBuffer;
     }
 

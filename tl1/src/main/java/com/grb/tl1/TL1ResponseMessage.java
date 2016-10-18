@@ -69,6 +69,7 @@ public class TL1ResponseMessage extends TL1OutputMessage {
     	newBuffer.write(newCTAG.getBytes());
     	newBuffer.write(ba, _ctagIndex + _ctagLength, length - (_ctagIndex + _ctagLength));
     	_ctag = newCTAG;
+    	_ctagLength = _ctag.length();
     	_buffer = newBuffer;
     }
     
