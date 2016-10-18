@@ -33,6 +33,8 @@ public class TL1ResponseMessage extends TL1OutputMessage {
     private String _date;
     private String _time;
     private String _ctag;
+    private int _ctagIndex;
+    private int _ctagLength;
     private String _complCode;
     private String _body;
 
@@ -42,6 +44,8 @@ public class TL1ResponseMessage extends TL1OutputMessage {
         _date = null;
         _time = null;
         _ctag = null;
+        _ctagIndex = 0;
+        _ctagLength = 0;
         _complCode = null;
         _body = null;
     }
@@ -56,6 +60,18 @@ public class TL1ResponseMessage extends TL1OutputMessage {
         return _ctag;
     }
 
+    public void setCTAG(String newCTAG) {
+    	int lengthDifference = newCTAG.length() - _ctagLength;
+    	com.grb.bufferutils.ByteBuffer newBuffer = new com.grb.bufferutils.ByteBuffer(_buffer.getLength() + lengthDifference);
+    	byte[] ba = _buffer.getBackingArray();
+    	int length = _buffer.getLength();
+    	newBuffer.write(ba, 0, _ctagIndex);
+    	newBuffer.write(newCTAG.getBytes());
+    	newBuffer.write(ba, _ctagIndex + _ctagLength, length - (_ctagIndex + _ctagLength));
+    	_ctag = newCTAG;
+    	_buffer = newBuffer;
+    }
+    
     public String getComplCode() { return _complCode; }
 
     public String getBody() { return _body; }
@@ -91,7 +107,9 @@ public class TL1ResponseMessage extends TL1OutputMessage {
         manadatoryWhitespaceParser.parse(pc);
         responseCodeParser.parse(pc, 2);
         manadatorySpacesParser.parse(pc);
+        _ctagIndex = pc.mark;
         _ctag = ctagParser.parse(pc);
+        _ctagLength = pc.mark - _ctagIndex;
         manadatorySpacesParser.parse(pc);
         _complCode = completonCodeParser.parse(pc);
         eolParser.parse(pc);

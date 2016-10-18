@@ -119,6 +119,33 @@ public class TL1AgentDecoder extends TL1Decoder {
 
     public static void main(String[] args) {
         TL1Decoder decoder = new TL1AgentDecoder();
+        String resp = "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n;";
+        try {
+			TL1ResponseMessage tl1Resp = (TL1ResponseMessage)decoder.decodeTL1Message(ByteBuffer.wrap(resp.getBytes()));
+			tl1Resp.setCTAG("00000002");
+			com.grb.bufferutils.ByteBuffer buffer = tl1Resp.getBuffer();
+			System.out.println(new String(buffer.getBackingArray(), 0, buffer.getLength()));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        String ip = "IP 0001\r\n<";
+        try {
+			TL1AckMessage tl1Ack = (TL1AckMessage)decoder.decodeTL1Message(ByteBuffer.wrap(ip.getBytes()));
+			tl1Ack.setCTAG("00020000");
+			com.grb.bufferutils.ByteBuffer buffer = tl1Ack.getBuffer();
+			System.out.println(new String(buffer.getBackingArray(), 0, buffer.getLength()));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        String evt = "\r\n\n   BOCAFLMA015 93-06-02 12:00:00\r\n** 789 REPT PM T1\r\n   \"AID-T1-1:CVL,50\"\r\n   \"AID-T1-2:CVL,10\"\r\n   \"AID-T1-n:CVL,22\"\r\n;";
+        try {
+			TL1AOMessage tl1AO = (TL1AOMessage)decoder.decodeTL1Message(ByteBuffer.wrap(evt.getBytes()));
+			tl1AO.setATAG("00020000");
+			com.grb.bufferutils.ByteBuffer buffer = tl1AO.getBuffer();
+			System.out.println(new String(buffer.getBackingArray(), 0, buffer.getLength()));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
         StringBuilder bldr = new StringBuilder(TL1OutputMessage.MAX_SIZE + 1);
         bldr.append("\r\n\n ");
         for(int i = 0; i < TL1OutputMessage.MAX_SIZE - 3; i++) {

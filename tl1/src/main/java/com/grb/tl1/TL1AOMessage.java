@@ -34,6 +34,8 @@ public class TL1AOMessage extends TL1OutputMessage {
     private String _time;
     private String _alarmCode;
     private String _atag;
+    private int _atagIndex;
+    private int _atagLength;
     private String _verb;
     private String _mod1;
     private String _mod2;
@@ -45,6 +47,8 @@ public class TL1AOMessage extends TL1OutputMessage {
         _time = null;
         _alarmCode = null;
         _atag = null;
+        _atagIndex = 0;
+        _atagLength = 0;
         _verb = null;
         _mod1 = null;
         _mod2 = null;
@@ -62,6 +66,18 @@ public class TL1AOMessage extends TL1OutputMessage {
 
     public String getATAG() {
         return _atag;
+    }
+
+    public void setATAG(String newATAG) {
+    	int lengthDifference = newATAG.length() - _atagLength;
+    	com.grb.bufferutils.ByteBuffer newBuffer = new com.grb.bufferutils.ByteBuffer(_buffer.getLength() + lengthDifference);
+    	byte[] ba = _buffer.getBackingArray();
+    	int length = _buffer.getLength();
+    	newBuffer.write(ba, 0, _atagIndex);
+    	newBuffer.write(newATAG.getBytes());
+    	newBuffer.write(ba, _atagIndex + _atagLength, length - (_atagIndex + _atagLength));
+    	_atag = newATAG;
+    	_buffer = newBuffer;
     }
 
     public String getVerb() {
@@ -107,7 +123,9 @@ public class TL1AOMessage extends TL1OutputMessage {
         manadatoryWhitespaceParser.parse(pc);
         _alarmCode = responseCodeParser.parse(pc, 2);
         manadatorySpacesParser.parse(pc);
+        _atagIndex = pc.mark;
         _atag = atagParser.parse(pc);
+        _atagLength = pc.mark - _atagIndex;
         manadatorySpacesParser.parse(pc);
         _verb = verbParser.parse(pc);
         optionalSpacesParser.parse(pc);
