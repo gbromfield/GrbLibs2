@@ -26,5 +26,8 @@
     <module>tl1</module>
     <module>parseutils</module>
     <module>bufferutils</module>
+    <module>logx-core</module>
+    <module>logx-puml</module>
+    <module>logx-insidious</module>
   </modules>
 </project>
