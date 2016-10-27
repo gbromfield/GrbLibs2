@@ -45,7 +45,7 @@ public class TL1InputMessage extends TL1Message {
             .removeDelimeterChar(':')
             .includeDelimiter(false);
 
-    private static final TextParser quotedtidParser = new TextParser()
+    private static final TextParser quotedtidaidParser = new TextParser()
             .setAllowedChars(CharacterList.ALPHABETIC_CHARS)
             .setDelimiterStrings("\"", "\"")
             .includeDelimiter(false)
@@ -137,12 +137,16 @@ public class TL1InputMessage extends TL1Message {
         _cmdCode = bldr.toString();
         colonDelParser.parse(pc, 1);
         try {
-            _tid = quotedtidParser.parse(pc);
+            _tid = quotedtidaidParser.parse(pc);
         } catch(ParseException e) {
             _tid = blockParser.parse(pc);
         }
         colonDelParser.parse(pc, 1);
-        _aid = blockParser.parse(pc);
+        try {
+            _aid = quotedtidaidParser.parse(pc);
+        } catch(ParseException e) {
+            _aid = blockParser.parse(pc);
+        }
         colonDelParser.parse(pc, 1);
         _ctag = blockParser.parse(pc);
     }
