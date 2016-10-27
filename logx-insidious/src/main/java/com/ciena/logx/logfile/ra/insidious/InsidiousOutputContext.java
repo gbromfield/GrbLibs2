@@ -198,7 +198,7 @@ public class InsidiousOutputContext implements OutputContext {
             }
             _capOutputWriter = new PrintWriter(new BufferedWriter(new FileWriter(_capOutputFile)));
         }
-        _logItems.addFirst("{\n\"capture\": [\n");
+        _logItems.addFirst("{\n\"recording\": [\n");
     }
 
     @Override

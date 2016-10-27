@@ -45,7 +45,8 @@ public class TL1LogRecordParser extends BaseLogRecordParser {
             String dateStr = parse(dateParser, pc);
             parse(mandatorySpacesParser, pc);
             String timeStr = parse(timeParser, pc);
-            Date date = DateFormatter.parse(dateStr + " " + timeStr);
+            String fullDateTime = dateStr + " " + timeStr;
+            Date date = DateFormatter.parse(fullDateTime);
             parse(mandatorySpacesParser, pc);
             parse(textFieldParser, pc);     // Log Level
             parse(mandatorySpacesParser, pc);
@@ -72,12 +73,12 @@ public class TL1LogRecordParser extends BaseLogRecordParser {
                             "  \"protocol\": \"tl1\",\n" +
                             "  \"timestamp\": \"%s\",\n" +
                             "  \"input\": \"%s %s\\r\\n<\"\n" +
-                            "},", timeStr, field2, field3);
+                            "},", fullDateTime, field2, field3);
                     return true;
                 } else if (field3.equalsIgnoreCase("act-user")) {
                     String tid = getTid(null, ncid);
-                    _outputContext.getOutputRecordSet().add(date, "{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"input\": \"ACT-USER:\\\"%s\\\":ADMIN:10001::ADMIN;\"\n},\n", timeStr, tid);
-                    _outputContext.getOutputRecordSet().add(date, "{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"\\r\\n\\n   \\\"%s\\\" 16-10-19 14:19:37\\r\\nM  10001 COMPLD\\r\\n;\"\n},\n", timeStr, tid);
+                    _outputContext.getOutputRecordSet().add(date, "{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"input\": \"ACT-USER:\\\"%s\\\":ADMIN:10001::ADMIN;\"\n},\n", fullDateTime, tid);
+                    _outputContext.getOutputRecordSet().add(date, "{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"\\r\\n\\n   \\\"%s\\\" 16-10-19 14:19:37\\r\\nM  10001 COMPLD\\r\\n;\"\n},\n", fullDateTime, tid);
                     return true;
                 } else {
                     throw e;
@@ -120,23 +121,23 @@ public class TL1LogRecordParser extends BaseLogRecordParser {
                     TL1Message tl1Msg = _agentDecoder.decodeTL1Message(tl1Buffer);
                     if (tl1Msg instanceof TL1AckMessage) {
                         TL1AckMessage tl1AckMsg = (TL1AckMessage)tl1Msg;
-                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", timeStr, transliterateCRLF(tl1AckMsg.toString())));
+                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1AckMsg.toString())));
                         _outputContext.getOutputRecordSet().add(or);
                     } else if (tl1Msg instanceof TL1AOMessage) {
                         TL1AOMessage tl1AOMsg = (TL1AOMessage)tl1Msg;
                         _outputContext.put(ncid, tl1AOMsg.getTid());
-                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", timeStr, transliterateCRLF(tl1AOMsg.toString())));
+                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1AOMsg.toString())));
                         _outputContext.getOutputRecordSet().add(or);
                     } else if (tl1Msg instanceof TL1ResponseMessage) {
                         TL1ResponseMessage tl1RespMsg = (TL1ResponseMessage)tl1Msg;
                         _outputContext.put(ncid, tl1RespMsg.getTid());
-                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", timeStr, transliterateCRLF(tl1RespMsg.toString())));
+                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1RespMsg.toString())));
                         _outputContext.getOutputRecordSet().add(or);
                     }
                 } else if (lessGreaterThan.equals(">")) {
                     TL1InputMessage tl1Msg = (TL1InputMessage)_mgrDecoder.decodeTL1Message(tl1Buffer);
                     String tid = getTid(tl1Msg.getTid(), ncid);
-                    or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"input\": \"%s\"\n},\n", timeStr, tl1Msg.toString()));
+                    or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"input\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1Msg.toString())));
                     _outputContext.getOutputRecordSet().add(or);
                 }
             } catch(ParseException e) {
