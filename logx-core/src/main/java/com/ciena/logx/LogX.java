@@ -7,6 +7,8 @@ import com.ciena.logx.logrecord.LogRecordParser;
 import com.ciena.logx.output.OutputContext;
 
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -15,6 +17,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by gbromfie on 10/19/16.
  */
 public class LogX {
+    final static public SimpleDateFormat DateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss_SSS");
+
     public static String getHostname() {
         InputStream is = null;
         try {
@@ -35,6 +39,44 @@ public class LogX {
         return null;
     }
 
+    public static HashSet<String> parseStringToSet(String arg) {
+    	HashSet<String> set = new HashSet<String>();
+        String[] argArr = arg.split(",");
+        for(int j = 0; j < argArr.length; j++) {
+        	set.add(argArr[j]);
+        }
+        return set;
+    }
+    
+    public static Date[] parseDateRange(String arg) {
+    	Date[] dateRange = new Date[2];
+    	dateRange[0] = null;
+    	dateRange[1] = null;
+        String[] argArr = arg.split(",");
+        if ((argArr.length != 1) && (argArr.length != 2)) {
+            throw new IllegalArgumentException("Range argument requires one or two parameters \"fromTime[,toTime]\"");
+        }
+        String fromDateStr = argArr[0].trim();
+        if (!fromDateStr.isEmpty()) {
+            try {
+            	dateRange[0] = DateFormatter.parse(fromDateStr);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException(String.format("Could not parse from date \"%s\" from format \"%s\"", fromDateStr, DateFormatter.toPattern()), e);
+            }
+        }
+        if (argArr.length == 2) {
+            String toDateStr = argArr[1].trim();
+            if (!toDateStr.isEmpty()) {
+                try {
+                	dateRange[1] = DateFormatter.parse(toDateStr);
+                } catch (ParseException e) {
+                    throw new IllegalArgumentException(String.format("Could not parse to date \"%s\" from format \"%s\"", toDateStr, DateFormatter.toPattern()), e);
+                }
+            }
+        }
+        return dateRange;
+    }
+    
     public static ArrayList<File> processFilenames(ArrayList<String> inputFiles, FileFilter filter) {
         ArrayList<File> inputFileList = new ArrayList<File>();
         for (int i = 0; i < inputFiles.size(); i++) {
