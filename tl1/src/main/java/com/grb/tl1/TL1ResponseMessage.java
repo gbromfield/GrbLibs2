@@ -26,7 +26,9 @@ public class TL1ResponseMessage extends TL1OutputMessage {
     private static final TextParser bodyParser = new TextParser()
             .setAllowedChars(CharacterList.ALL_CHARS)
             .removeAllowedChar(';')
+            .removeAllowedChar('>')
             .addDelimeterChar(';')
+            .addDelimeterChar('>')
             .includeDelimiter(false);
 
     private String _tid;
@@ -37,6 +39,7 @@ public class TL1ResponseMessage extends TL1OutputMessage {
     private int _ctagLength;
     private String _complCode;
     private String _body;
+    private TL1ResponseType _responseType;
 
     public TL1ResponseMessage(byte[] preamble, int offset, int messageStartIdx, int length) throws TL1MessageMaxSizeExceededException {
         super(preamble, offset, messageStartIdx, length);
@@ -48,6 +51,7 @@ public class TL1ResponseMessage extends TL1OutputMessage {
         _ctagLength = 0;
         _complCode = null;
         _body = null;
+        _responseType = null;
     }
 
     public String getTid() { return _tid; }
@@ -77,6 +81,10 @@ public class TL1ResponseMessage extends TL1OutputMessage {
 
     public String getBody() { return _body; }
 
+    public TL1ResponseType getResponseType() {
+        return _responseType;
+    }
+
     @Override
     public boolean parse(ByteBuffer readBuffer) throws TL1MessageMaxSizeExceededException, ParseException {
         while(readBuffer.hasRemaining()) {
@@ -85,12 +93,25 @@ public class TL1ResponseMessage extends TL1OutputMessage {
             if (_buffer.getLength() > MAX_SIZE) {
                 throw new TL1MessageMaxSizeExceededException(String.format("Error: maximum %d character size of output message reached", TL1OutputMessage.MAX_SIZE));
             }
-            if ((b == ';') && (_stack.size() == 0)) {
+            if ((_responseType = isTerminal(_buffer.getBackingArray(), _buffer.getLength())) != null) {
                 parseTL1();
                 return true;
             }
         }
         return false;
+    }
+
+    private TL1ResponseType isTerminal(byte[] ba, int length) {
+        if (length >= 3) {
+            if ((ba[length-3] == '\r') && (ba[length-2] == '\n')) {
+                if (ba[length-1] == ';') {
+                    return TL1ResponseType.TERMINATION;
+                } else if (ba[length-1] == '>') {
+                    return TL1ResponseType.CONTINUATION;
+                }
+            }
+        }
+        return null;
     }
 
     private void parseTL1() throws ParseException {

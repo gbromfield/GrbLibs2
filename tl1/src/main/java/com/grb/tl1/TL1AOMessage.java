@@ -29,6 +29,7 @@ public class TL1AOMessage extends TL1OutputMessage {
             .setDelimiterChars(CharacterList.WHITESPACE_CHARS)
             .includeDelimiter(false);
 
+    private String _cmdCode;
     private String _tid;
     private String _date;
     private String _time;
@@ -52,6 +53,10 @@ public class TL1AOMessage extends TL1OutputMessage {
         _verb = null;
         _mod1 = null;
         _mod2 = null;
+    }
+
+    public String getCmdCode() {
+        return _cmdCode;
     }
 
     public String getTid() { return _tid; }
@@ -133,5 +138,16 @@ public class TL1AOMessage extends TL1OutputMessage {
         _mod1 = modParser.parse(pc);
         optionalSpacesParser.parse(pc);
         _mod2 = modParser.parse(pc);
+        StringBuilder bldr = new StringBuilder();
+        bldr.append(_verb);
+        if (_mod1.length() > 0) {
+            bldr.append(" ");
+            bldr.append(_mod1);
+        }
+        if (_mod2.length() > 0) {
+            bldr.append(" ");
+            bldr.append(_mod2);
+        }
+        _cmdCode = bldr.toString();
     }
 }

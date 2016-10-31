@@ -119,12 +119,18 @@ public class TL1AgentDecoder extends TL1Decoder {
 
     public static void main(String[] args) {
         TL1Decoder decoder = new TL1AgentDecoder();
-        String resp = "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n;";
+        String resp = "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n>" +
+                "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n>" +
+                "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n;";
         try {
-			TL1ResponseMessage tl1Resp = (TL1ResponseMessage)decoder.decodeTL1Message(ByteBuffer.wrap(resp.getBytes()));
-			tl1Resp.setCTAG("00000002");
-			com.grb.bufferutils.ByteBuffer buffer = tl1Resp.getBuffer();
-			System.out.println(new String(buffer.getBackingArray(), 0, buffer.getLength()));
+            System.out.println(resp + "\n---------------------------------");
+            ByteBuffer input = ByteBuffer.wrap(resp.getBytes());
+            while(input.hasRemaining()) {
+                TL1ResponseMessage tl1Resp = (TL1ResponseMessage)decoder.decodeTL1Message(input);
+                tl1Resp.setCTAG("00000002");
+                com.grb.bufferutils.ByteBuffer buffer = tl1Resp.getBuffer();
+                System.out.println(new String(buffer.getBackingArray(), 0, buffer.getLength()));
+            }
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
