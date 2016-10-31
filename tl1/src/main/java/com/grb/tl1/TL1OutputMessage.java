@@ -13,7 +13,7 @@ abstract public class TL1OutputMessage extends TL1Message {
      * By spec the largest TL1 segment size can be 4096.
      * Doubled for buffer.
      */
-    public static int MAX_SIZE = 8192;
+    public static int MAX_SIZE = 1000000;
 
     public static final byte[] PREAMBLE = "\r\n\n   ".getBytes();
 
