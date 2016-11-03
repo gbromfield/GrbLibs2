@@ -1,6 +1,7 @@
 package com.ciena.logx.logfile.ra.puml;
 
 import com.ciena.logx.LogX;
+import com.ciena.logx.LogXProperties;
 import com.ciena.logx.logfile.ra.puml.logrecord.*;
 import com.ciena.logx.logrecord.LogRecordParser;
 import com.ciena.logx.output.OutputContext;
@@ -10,7 +11,8 @@ import com.ciena.logx.util.ExtensionFilter;
 import net.sourceforge.plantuml.SourceStringReader;
 
 import java.io.*;
-import java.text.ParseException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -20,172 +22,44 @@ import java.util.*;
 public class PumlOutputContext implements OutputContext {
     final static public SimpleDateFormat DateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss_SSS");
 
-    private ArrayList<File> _inputFileList;
-    private String _pumlOutputFilename;
+    private PumlProperties _props;
     private File _pumlOutputFile;
     private PrintWriter _pumlOutputWriter;
-    private String _pngOutputFilename;
     private File _pngOutputFile;
-    private LogRecordParser[] _parsers;
     private OutputRecordSet _logItems;
     private HashMap<String, String> _mapper;
     private HashMap<String, Object> _statsMap;
-    private String _bufferStr;
-    private HashSet<String> _incTids;
-    private HashSet<String> _exclTids;
-    private HashSet<String> _incSids;
-    private HashSet<String> _exclSids;
-    private Boolean _inclusive;
+    private String _buffer;
 
-    public PumlOutputContext(String[] args, ArrayList<File> inputFileList) {
-        ArrayList<LogRecordParser> parserList = new ArrayList<LogRecordParser>();
-        _inputFileList = inputFileList;
-        _pumlOutputFilename = null;
-        _pumlOutputFile = null;
-        _pumlOutputWriter = null;
-        _pngOutputFilename = null;
-        _pngOutputFile = null;
-        _incTids = null;
-        _exclTids = null;
-        _incSids = null;
-        _exclSids = null;
-        _inclusive = null;
-        Date fromDate = null;
-        Date toDate = null;
-        boolean tl1 = false;
-        int i = 0;
-        while(i < args.length) {
-            if (args[i].equalsIgnoreCase("-tl1")) {
-                TL1LogRecordParser parser = new TL1LogRecordParser(this, false);
-                parserList.add(parser);
-                tl1 = true;
-            } else if (args[i].equalsIgnoreCase("-puml")) {
-                i++;
-                _pumlOutputFilename = args[i];
-            } else if (args[i].equalsIgnoreCase("-png")) {
-                i++;
-                _pngOutputFilename = args[i];
-            } else if (args[i].equalsIgnoreCase("-kafka")) {
-                KafkaLogRecordParser parser = new KafkaLogRecordParser(this);
-                parserList.add(parser);
-            } else if (args[i].equalsIgnoreCase("-session")) {
-                SessionStateRecordParser parser = new SessionStateRecordParser(this);
-                parserList.add(parser);
-            } else if (args[i].equalsIgnoreCase("-range")) {
-                i++;
-                String[] argArr = args[i].split(",");
-                if ((argArr.length != 1) && (argArr.length != 2)) {
-                    throw new IllegalArgumentException("Range argument requires one or two parameters \"fromTime[,toTime]\"");
-                }
-                String fromDateStr = argArr[0].trim();
-                if (!fromDateStr.isEmpty()) {
-                    try {
-                        fromDate = DateFormatter.parse(fromDateStr);
-                    } catch (ParseException e) {
-                        throw new IllegalArgumentException(String.format("Could not parse from date \"%s\" from format \"%s\"", fromDateStr, DateFormatter.toPattern()), e);
-                    }
-                }
-                if (argArr.length == 2) {
-                    String toDateStr = argArr[1].trim();
-                    if (!toDateStr.isEmpty()) {
-                        try {
-                            toDate = DateFormatter.parse(toDateStr);
-                        } catch (ParseException e) {
-                            throw new IllegalArgumentException(String.format("Could not parse to date \"%s\" from format \"%s\"", toDateStr, DateFormatter.toPattern()), e);
-                        }
-                    }
-                }
-            } else if (args[i].equalsIgnoreCase("+tids")) {
-                if ((_inclusive != null) && (!_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [+tids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_incTids == null) {
-                    _incTids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _incTids.add(argArr[j]);
-                }
-                _inclusive = true;
-            } else if (args[i].equalsIgnoreCase("-tids")) {
-                if ((_inclusive != null) && (_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [-tids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_exclTids == null) {
-                    _exclTids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _exclTids.add(argArr[j]);
-                }
-                _inclusive = false;
-            } else if (args[i].equalsIgnoreCase("+sids")) {
-                if ((_inclusive != null) && (!_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [+sids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_incSids == null) {
-                    _incSids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _incSids.add(argArr[j]);
-                }
-                _inclusive = true;
-            } else if (args[i].equalsIgnoreCase("-sids")) {
-                if ((_inclusive != null) && (_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [-sids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_exclSids == null) {
-                    _exclSids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _exclSids.add(argArr[j]);
-                }
-                _inclusive = false;
-            }
-            i++;
-        }
-        if (parserList.isEmpty()) {
-            throw new IllegalArgumentException("No Puml parsers specified, need one or more of [-tl1, -kafka, -session, -sync]");
-        }
-
-        if ((_pumlOutputFilename == null) || (_pngOutputFilename == null)) {
-            throw new IllegalArgumentException("Error: No output file specified, must specify -puml or -png options");
-        }
-
-        if (!tl1) {
-            // add a TL1 parser just for TID mapping
-            TL1LogRecordParser parser = new TL1LogRecordParser(this, true);
-            parserList.add(parser);
-        }
-        _parsers = new LogRecordParser[parserList.size()];
-        _parsers = parserList.toArray(_parsers);
+    public PumlOutputContext(PumlProperties props) {
+        _props = props;
+        _props.addParserName(TL1LogRecordParser.class.getName());   // add tL1 by default
+        _props.setOutputContext(this);
         _mapper = new HashMap<String, String>();
         _statsMap = new HashMap<String, Object>();
-        _bufferStr = null;
-        _logItems = new OutputRecordSet(fromDate, toDate);
-        _logItems.addFirst("@startuml\n");
-        if (_inclusive == null) {
-            _inclusive = false;
+        _buffer = null;
+        _logItems = new OutputRecordSet(_props.getFromDate(), _props.getToDate());
+        if (_props.getInclusive() == null) {
+            _props.setInclusive(false);
         }
     }
 
     @Override
+    public LogXProperties getProperties() {
+        return _props;
+    }
+
+    @Override
     public void init() throws Exception {
-        if (_pumlOutputFilename != null) {
-            _pumlOutputFile = new File(_pumlOutputFilename);
+        if (_props.getPumlFilename() != null) {
+            _pumlOutputFile = new File(_props.getPumlFilename());
             if (_pumlOutputFile.exists()) {
                 _pumlOutputFile.delete();
             }
             _pumlOutputWriter = new PrintWriter(new BufferedWriter(new FileWriter(_pumlOutputFile)));
         }
-        if (_pngOutputFilename != null) {
-            _pngOutputFile = new File(_pngOutputFilename);
+        if (_props.getPngFilename() != null) {
+            _pngOutputFile = new File(_props.getPngFilename());
             if (_pngOutputFile.exists()) {
                 _pngOutputFile.delete();
             }
@@ -199,8 +73,8 @@ public class PumlOutputContext implements OutputContext {
         } else {
             getOutputRecordSet().addFirst("== Generated on %s on host %s ==\n", fmt.format(currentDate), hostname);
         }
-        for(int i = 0; i < _inputFileList.size(); i++) {
-            getOutputRecordSet().addFirst("== Input File %s ==\n", _inputFileList.get(i).getAbsolutePath());
+        for(int i = 0; i < _props.getInputFiles().size(); i++) {
+            getOutputRecordSet().addFirst("== Input File %s ==\n", _props.getInputFiles().get(i).getAbsolutePath());
         }
 
     }
@@ -210,36 +84,31 @@ public class PumlOutputContext implements OutputContext {
             return true;
         }
         String ncidNo_ = ncid.substring(1, ncid.length()-1);
-        if (_incSids != null) {
-            return _incSids.contains(ncidNo_);
+        if (_props.getIncSids() != null) {
+            return _props.getIncSids().contains(ncidNo_);
         }
-        if (_exclSids != null) {
-            return !_exclSids.contains(ncidNo_);
+        if (_props.getExclSids() != null) {
+            return !_props.getExclSids().contains(ncidNo_);
         }
         String tid = _mapper.get(ncid);
         if (tid == null) {
-            if (_inclusive) {
+            if (_props.getInclusive()) {
                 return false;
             } else {
                 return true;
             }
         }
-        if (_incTids != null) {
-            return _incTids.contains(tid);
+        if (_props.getIncTids() != null) {
+            return _props.getIncTids().contains(tid);
         }
-        if (_exclTids != null) {
-            return !_exclTids.contains(tid);
+        if (_props.getExclTids() != null) {
+            return !_props.getExclTids().contains(tid);
         }
-        if (_inclusive) {
+        if (_props.getInclusive()) {
             return false;
         } else {
             return true;
         }
-    }
-
-    @Override
-    public LogRecordParser[] getLogRecordParsers() {
-        return _parsers;
     }
 
     public OutputRecordSet getOutputRecordSet() { return _logItems; }
@@ -280,13 +149,13 @@ public class PumlOutputContext implements OutputContext {
         }
         _logItems.addLast("@enduml\n");
 
-        if (_pumlOutputFilename != null) {
-            _pumlOutputWriter.print(toString());
+        if (_props.getPumlFilename() != null) {
+            _pumlOutputWriter.print(logItemsToString());
             _pumlOutputWriter.flush();
             _pumlOutputWriter.close();
         }
 
-        if (_pngOutputFilename != null) {
+        if (_props.getPngFilename() != null) {
             SourceStringReader reader = new SourceStringReader(toString());
             String desc = reader.generateImage(_pngOutputFile);
             if (desc != null) {
@@ -297,7 +166,7 @@ public class PumlOutputContext implements OutputContext {
 
     @Override
     public void onFinally() {
-        if ((_pumlOutputFilename != null) && (_pumlOutputWriter != null)) {
+        if ((_props.getPumlFilename() != null) && (_pumlOutputWriter != null)) {
             _pumlOutputWriter.close();
         }
     }
@@ -306,8 +175,8 @@ public class PumlOutputContext implements OutputContext {
     public int size() { return _logItems.size(); }
 
     @Override
-    public String toString() {
-        if (_bufferStr == null) {
+    public  String logItemsToString() {
+        if (_buffer == null) {
             StringBuilder bldr = new StringBuilder();
             int size = _logItems.size();
             int filteredOut = 0;
@@ -327,49 +196,36 @@ public class PumlOutputContext implements OutputContext {
                     bldr.replace(index, index + key.length(), value);
                 }
             }
-            _bufferStr = bldr.toString();
+            _buffer = bldr.toString();
         }
-        if (_bufferStr == null) {
-            return super.toString();
-        }
-        return _bufferStr;
+        return _buffer;
     }
 
     public static void main(String[] args) {
-        final String syntax = "Syntax: LogX -i <input file> -puml <output text file> -png <output png file> -e <log file extension>";
+        PumlCommandLineProcessor clp = new PumlCommandLineProcessor();
+        PumlProperties props = (PumlProperties)clp.parse(args);
 
-        ArrayList<String> inputFiles = new ArrayList<String>();
-        boolean processingInputFiles = false;
-        String extension = null;
-        ExtensionFilter filter = null;
-
-        int i = 0;
-        while(i < args.length) {
-            if (args[i].equalsIgnoreCase("-i")) {
-                processingInputFiles = true;
-            } else if (args[i].equalsIgnoreCase("-e")) {
-                processingInputFiles = false;
-                i++;
-                filter = new ExtensionFilter(args[i]);
-            } else if (args[i].startsWith("-")) {
-                processingInputFiles = false;
-            } else if (processingInputFiles) {
-                inputFiles.add(args[i]);
-            } else {
-                // ignore might be a parser argument
-            }
-            i++;
+        if (props.getUnknownArg() != null) {
+            System.out.println(String.format("Unknown argument: \"%s\"", props.getUnknownArg()));
+            System.out.println("Syntax:");
+            System.out.println(clp.getSyntax());
+            System.exit(0);
         }
 
-        if (inputFiles.size() == 0) {
-            System.out.println(syntax);
+        if (props.printHelp()) {
+            System.out.println("Syntax:");
+            System.out.println(clp.getSyntax());
+            System.exit(0);
+        }
+
+        if ((props.getInputFilenames() == null) || (props.getInputFilenames().size() == 0)) {
             System.out.println("Error: No input file specified");
+            System.out.println(clp.getSyntax());
             System.exit(1);
         }
 
-        ArrayList<File>  inputFileList = LogX.processFilenames(inputFiles, filter);
-        PumlOutputContext ctx = new PumlOutputContext(args, inputFileList);
-        LogX logx = new LogX(inputFileList, ctx);
+        PumlOutputContext ctx = new PumlOutputContext(props);
+        LogX logx = new LogX(props);
         logx.run();
     }
 }

@@ -83,4 +83,8 @@ abstract public class TL1OutputMessage extends TL1Message {
     public int getMessageStartIdx() {
         return _messageStartIdx;
     }
+
+    public String toTrimmedString() {
+        return new String(_buffer.getBackingArray(), _messageStartIdx, _buffer.getLength() - _messageStartIdx);
+    }
 }

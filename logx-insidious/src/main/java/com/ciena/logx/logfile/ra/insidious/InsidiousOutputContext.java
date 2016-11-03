@@ -1,15 +1,14 @@
 package com.ciena.logx.logfile.ra.insidious;
 
 import com.ciena.logx.LogX;
+import com.ciena.logx.LogXProperties;
 import com.ciena.logx.logfile.ra.insidious.logrecord.TL1LogRecordParser;
-import com.ciena.logx.logrecord.LogRecordParser;
 import com.ciena.logx.output.OutputContext;
 import com.ciena.logx.output.OutputRecord;
 import com.ciena.logx.output.OutputRecordSet;
-import com.ciena.logx.util.ExtensionFilter;
 
 import java.io.*;
-import java.text.ParseException;
+import java.lang.reflect.InvocationTargetException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -19,142 +18,33 @@ import java.util.*;
 public class InsidiousOutputContext implements OutputContext {
     final static public SimpleDateFormat DateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss_SSS");
 
-    private String _capOutputFilename;
+    private InsidiousLogXProperties _props;
     private File _capOutputFile;
     private PrintWriter _capOutputWriter;
-    private LogRecordParser[] _parsers;
     private OutputRecordSet _logItems;
     private HashMap<String, String> _mapper;
     private HashMap<String, Object> _statsMap;
-    private String _bufferStr;
-    private HashSet<String> _incTids;
-    private HashSet<String> _exclTids;
-    private HashSet<String> _incSids;
-    private HashSet<String> _exclSids;
-    private Boolean _inclusive;
+    private String _buffer;
 
-    public InsidiousOutputContext(String[] args) {
-        ArrayList<LogRecordParser> parserList = new ArrayList<LogRecordParser>();
-        _incTids = null;
-        _exclTids = null;
-        _incSids = null;
-        _exclSids = null;
-        _inclusive = null;
-        Date fromDate = null;
-        Date toDate = null;
-        boolean tl1 = false;
-        int i = 0;
-        while(i < args.length) {
-            if (args[i].equalsIgnoreCase("-tl1")) {
-                TL1LogRecordParser parser = new TL1LogRecordParser(this);
-                parserList.add(parser);
-                tl1 = true;
-            } else if (args[i].equalsIgnoreCase("-cap")) {
-                i++;
-                _capOutputFilename = args[i];
-            } else if (args[i].equalsIgnoreCase("-session")) {
-//                SessionStateRecordParser parser = new SessionStateRecordParser(this);
-//                parserList.add(parser);
-            } else if (args[i].equalsIgnoreCase("-range")) {
-                i++;
-                String[] argArr = args[i].split(",");
-                if ((argArr.length != 1) && (argArr.length != 2)) {
-                    throw new IllegalArgumentException("Range argument requires one or two parameters \"fromTime[,toTime]\"");
-                }
-                String fromDateStr = argArr[0].trim();
-                if (!fromDateStr.isEmpty()) {
-                    try {
-                        fromDate = DateFormatter.parse(fromDateStr);
-                    } catch (ParseException e) {
-                        throw new IllegalArgumentException(String.format("Could not parse from date \"%s\" from format \"%s\"", fromDateStr, DateFormatter.toPattern()), e);
-                    }
-                }
-                if (argArr.length == 2) {
-                    String toDateStr = argArr[1].trim();
-                    if (!toDateStr.isEmpty()) {
-                        try {
-                            toDate = DateFormatter.parse(toDateStr);
-                        } catch (ParseException e) {
-                            throw new IllegalArgumentException(String.format("Could not parse to date \"%s\" from format \"%s\"", toDateStr, DateFormatter.toPattern()), e);
-                        }
-                    }
-                }
-            } else if (args[i].equalsIgnoreCase("+tids")) {
-                if ((_inclusive != null) && (!_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [+tids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_incTids == null) {
-                    _incTids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _incTids.add(argArr[j]);
-                }
-                _inclusive = true;
-            } else if (args[i].equalsIgnoreCase("-tids")) {
-                if ((_inclusive != null) && (_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [-tids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_exclTids == null) {
-                    _exclTids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _exclTids.add(argArr[j]);
-                }
-                _inclusive = false;
-            } else if (args[i].equalsIgnoreCase("+sids")) {
-                if ((_inclusive != null) && (!_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [+sids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_incSids == null) {
-                    _incSids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _incSids.add(argArr[j]);
-                }
-                _inclusive = true;
-            } else if (args[i].equalsIgnoreCase("-sids")) {
-                if ((_inclusive != null) && (_inclusive)) {
-                    throw new IllegalArgumentException("Cannot include inclusive and exclusive parameters [-sids]");
-                }
-                i++;
-                String[] argArr = args[i].split(",");
-                if (_exclSids == null) {
-                    _exclSids = new HashSet<String>();
-                }
-                for(int j = 0; j < argArr.length; j++) {
-                    _exclSids.add(argArr[j]);
-                }
-                _inclusive = false;
-            }
-            i++;
+    public InsidiousOutputContext(InsidiousLogXProperties props) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        _props = props;
+        if (_props.getRecordingFilename() == null) {
+            throw new IllegalArgumentException("Error: No output recording file specified, must specify -cap");
         }
-        if (parserList.isEmpty()) {
-            throw new IllegalArgumentException("No Puml parsers specified, need one or more of [-tl1, -kafka, -session, -sync]");
-        }
-        if (_capOutputFilename == null) {
-            throw new IllegalArgumentException("Error: No output file specified, must specify -cap");
-        }
-
-        if (!tl1) {
-            // add a TL1 parser just for TID mapping
-            TL1LogRecordParser parser = new TL1LogRecordParser(this);
-            parserList.add(parser);
-        }
-        _parsers = new LogRecordParser[parserList.size()];
-        _parsers = parserList.toArray(_parsers);
+        _props.addParserName(TL1LogRecordParser.class.getName());   // add tL1 by default
+        _props.setOutputContext(this);
         _mapper = new HashMap<String, String>();
         _statsMap = new HashMap<String, Object>();
-        _bufferStr = null;
-        _logItems = new OutputRecordSet(fromDate, toDate);
-        if (_inclusive == null) {
-            _inclusive = false;
+        _buffer = null;
+        _logItems = new OutputRecordSet(_props.getFromDate(), _props.getToDate());
+        if (_props.getInclusive() == null) {
+            _props.setInclusive(false);
         }
+    }
+
+    @Override
+    public LogXProperties getProperties() {
+        return _props;
     }
 
     public boolean passesFilter(String ncid) {
@@ -162,27 +52,27 @@ public class InsidiousOutputContext implements OutputContext {
             return true;
         }
         String ncidNo_ = ncid.substring(1, ncid.length()-1);
-        if (_incSids != null) {
-            return _incSids.contains(ncidNo_);
+        if (_props.getIncSids() != null) {
+            return _props.getIncSids().contains(ncidNo_);
         }
-        if (_exclSids != null) {
-            return !_exclSids.contains(ncidNo_);
+        if (_props.getExclSids() != null) {
+            return !_props.getExclSids().contains(ncidNo_);
         }
         String tid = _mapper.get(ncid);
         if (tid == null) {
-            if (_inclusive) {
+            if (_props.getInclusive()) {
                 return false;
             } else {
                 return true;
             }
         }
-        if (_incTids != null) {
-            return _incTids.contains(tid);
+        if (_props.getIncTids() != null) {
+            return _props.getIncTids().contains(tid);
         }
-        if (_exclTids != null) {
-            return !_exclTids.contains(tid);
+        if (_props.getExclTids() != null) {
+            return !_props.getExclTids().contains(tid);
         }
-        if (_inclusive) {
+        if (_props.getInclusive()) {
             return false;
         } else {
             return true;
@@ -191,19 +81,14 @@ public class InsidiousOutputContext implements OutputContext {
 
     @Override
     public void init() throws Exception {
-        if (_capOutputFilename != null) {
-            _capOutputFile = new File(_capOutputFilename);
+        if (_props.getRecordingFilename() != null) {
+            _capOutputFile = new File(_props.getRecordingFilename());
             if (_capOutputFile.exists()) {
                 _capOutputFile.delete();
             }
             _capOutputWriter = new PrintWriter(new BufferedWriter(new FileWriter(_capOutputFile)));
         }
         _logItems.addFirst("{\n\"recording\": [\n");
-    }
-
-    @Override
-    public LogRecordParser[] getLogRecordParsers() {
-        return _parsers;
     }
 
     public OutputRecordSet getOutputRecordSet() { return _logItems; }
@@ -237,8 +122,8 @@ public class InsidiousOutputContext implements OutputContext {
     public void close() {
         _logItems.addLast("]}");
 
-        if (_capOutputFilename != null) {
-            _capOutputWriter.print(toString());
+        if (_props.getRecordingFilename() != null) {
+            _capOutputWriter.print(logItemsToString());
             _capOutputWriter.flush();
             _capOutputWriter.close();
         }
@@ -249,14 +134,14 @@ public class InsidiousOutputContext implements OutputContext {
 
     @Override
     public void onFinally() {
-        if ((_capOutputFilename != null) && (_capOutputWriter != null)) {
+        if ((_props.getRecordingFilename() != null) && (_capOutputWriter != null)) {
             _capOutputWriter.close();
         }
     }
 
     @Override
-    public String toString() {
-        if (_bufferStr == null) {
+    public String logItemsToString() {
+        if (_buffer == null) {
             StringBuilder bldr = new StringBuilder();
             int size = _logItems.size();
             int filteredOut = 0;
@@ -277,50 +162,45 @@ public class InsidiousOutputContext implements OutputContext {
                 }
             }
             int index = bldr.lastIndexOf(",");
-            bldr.deleteCharAt(index);
-            _bufferStr = bldr.toString();
+            if (index >= 0) {
+                bldr.deleteCharAt(index);
+            }
+            _buffer = bldr.toString();
         }
-        if (_bufferStr == null) {
-            return super.toString();
-        }
-        return _bufferStr;
+        return _buffer;
     }
 
     public static void main(String[] args) {
-        final String syntax = "Syntax: LogX -i <input files> -cap <output capture file> -e <log file extension>";
+        InsidiousLogXCommandLineProcessor clp = new InsidiousLogXCommandLineProcessor();
+        InsidiousLogXProperties props = (InsidiousLogXProperties)clp.parse(args);
 
-        ArrayList<String> inputFiles = new ArrayList<String>();
-        boolean processingInputFiles = false;
-        String extension = null;
-        ExtensionFilter filter = null;
-
-        int i = 0;
-        while(i < args.length) {
-            if (args[i].equalsIgnoreCase("-i")) {
-                processingInputFiles = true;
-            } else if (args[i].equalsIgnoreCase("-e")) {
-                processingInputFiles = false;
-                i++;
-                filter = new ExtensionFilter(args[i]);
-            } else if (args[i].startsWith("-")) {
-                processingInputFiles = false;
-            } else if (processingInputFiles) {
-                inputFiles.add(args[i]);
-            } else {
-                // ignore might be a parser argument
-            }
-            i++;
+        if (props.getUnknownArg() != null) {
+            System.out.println(String.format("Unknown argument: \"%s\"", props.getUnknownArg()));
+            System.out.println("Syntax:");
+            System.out.println(clp.getSyntax());
+            System.exit(0);
         }
 
-        if (inputFiles.size() == 0) {
-            System.out.println(syntax);
+        if (props.printHelp()) {
+            System.out.println("Syntax:");
+            System.out.println(clp.getSyntax());
+            System.exit(0);
+        }
+
+        if ((props.getInputFilenames() == null) || (props.getInputFilenames().size() == 0)) {
             System.out.println("Error: No input file specified");
+            System.out.println(clp.getSyntax());
             System.exit(1);
         }
 
-        ArrayList<File>  inputFileList = LogX.processFilenames(inputFiles, filter);
-        InsidiousOutputContext ctx = new InsidiousOutputContext(args);
-        LogX logx = new LogX(inputFileList, ctx);
-        logx.run();
+        InsidiousOutputContext ctx = null;
+        try {
+            ctx = new InsidiousOutputContext(props);
+            LogX logx = new LogX(props);
+            logx.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.exit(0);
     }
 }

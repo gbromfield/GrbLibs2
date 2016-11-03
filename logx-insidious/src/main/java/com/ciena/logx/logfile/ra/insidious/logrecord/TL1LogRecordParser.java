@@ -72,7 +72,7 @@ public class TL1LogRecordParser extends BaseLogRecordParser {
                     _outputContext.getOutputRecordSet().add(date, "{\n" +
                             "  \"protocol\": \"tl1\",\n" +
                             "  \"timestamp\": \"%s\",\n" +
-                            "  \"input\": \"%s %s\\r\\n<\"\n" +
+                            "  \"output\": \"%s %s\\r\\n<\"\n" +
                             "},", fullDateTime, field2, field3);
                     return true;
                 } else if (field3.equalsIgnoreCase("act-user")) {
@@ -118,21 +118,29 @@ public class TL1LogRecordParser extends BaseLogRecordParser {
             tl1Buffer.flip();
             try {
                 if (lessGreaterThan.equals("<")) {
-                    TL1Message tl1Msg = _agentDecoder.decodeTL1Message(tl1Buffer);
-                    if (tl1Msg instanceof TL1AckMessage) {
-                        TL1AckMessage tl1AckMsg = (TL1AckMessage)tl1Msg;
-                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1AckMsg.toString())));
-                        _outputContext.getOutputRecordSet().add(or);
-                    } else if (tl1Msg instanceof TL1AOMessage) {
-                        TL1AOMessage tl1AOMsg = (TL1AOMessage)tl1Msg;
-                        _outputContext.put(ncid, tl1AOMsg.getTid());
-                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1AOMsg.toString())));
-                        _outputContext.getOutputRecordSet().add(or);
-                    } else if (tl1Msg instanceof TL1ResponseMessage) {
-                        TL1ResponseMessage tl1RespMsg = (TL1ResponseMessage)tl1Msg;
-                        _outputContext.put(ncid, tl1RespMsg.getTid());
-                        or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1RespMsg.toString())));
-                        _outputContext.getOutputRecordSet().add(or);
+                    while(tl1Buffer.hasRemaining()) {
+                        TL1Message tl1Msg = _agentDecoder.decodeTL1Message(tl1Buffer);
+                        if (tl1Msg instanceof TL1AckMessage) {
+                            TL1AckMessage tl1AckMsg = (TL1AckMessage)tl1Msg;
+                            or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1AckMsg.toTrimmedString())));
+                            _outputContext.getOutputRecordSet().add(or);
+                        } else if (tl1Msg instanceof TL1AOMessage) {
+                            TL1AOMessage tl1AOMsg = (TL1AOMessage)tl1Msg;
+                            _outputContext.put(ncid, tl1AOMsg.getTid());
+                            or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1AOMsg.toTrimmedString())));
+                            _outputContext.getOutputRecordSet().add(or);
+                        } else if (tl1Msg instanceof TL1ResponseMessage) {
+                            if (or.getLogString() != null) {
+                                // part of a multi-part response
+                                or = new OutputRecord(date, this.getClass(), null, null);
+                                or.putEnvValue("ncid", ncid);
+                                or.putEnvValue("timeStr", timeStr);
+                            }
+                            TL1ResponseMessage tl1RespMsg = (TL1ResponseMessage)tl1Msg;
+                            _outputContext.put(ncid, tl1RespMsg.getTid());
+                            or.setLogString(String.format("{\n  \"protocol\": \"tl1\",\n  \"timestamp\": \"%s\",\n  \"output\": \"%s\"\n},\n", fullDateTime, transliterateCRLF(tl1RespMsg.toTrimmedString())));
+                            _outputContext.getOutputRecordSet().add(or);
+                        }
                     }
                 } else if (lessGreaterThan.equals(">")) {
                     TL1InputMessage tl1Msg = (TL1InputMessage)_mgrDecoder.decodeTL1Message(tl1Buffer);

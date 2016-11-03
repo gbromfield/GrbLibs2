@@ -119,7 +119,7 @@ public class TL1AgentDecoder extends TL1Decoder {
 
     public static void main(String[] args) {
         TL1Decoder decoder = new TL1AgentDecoder();
-        String resp = "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n>" +
+        String resp = "kfasdk\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n>" +
                 "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n>" +
                 "\r\n\n   HOLMNJCRK01 85-10-09 22:05:12\r\nM  0001 COMPLD\r\n   \"EMPTY-0-8::\"\r\n;";
         try {
