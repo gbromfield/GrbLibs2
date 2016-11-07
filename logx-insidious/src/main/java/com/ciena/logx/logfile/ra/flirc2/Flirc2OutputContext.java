@@ -29,7 +29,7 @@ public class Flirc2OutputContext implements OutputContext {
     public Flirc2OutputContext(Flirc2LogXProperties props) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         _props = props;
         if (_props.getRecordingFilename() == null) {
-            throw new IllegalArgumentException("Error: No output recording file specified, must specify -cap");
+            throw new IllegalArgumentException("Error: No output recording file specified, must specify -rec");
         }
         _props.addParserName(TL1LogRecordParser.class.getName());   // add tL1 by default
         _props.setOutputContext(this);
