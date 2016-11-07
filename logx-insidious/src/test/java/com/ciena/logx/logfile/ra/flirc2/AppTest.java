@@ -1,4 +1,4 @@
-package com.ciena.logx.logfile.ra.insidious;
+package com.ciena.logx.logfile.ra.flirc2;
 
 import junit.framework.Test;
 import junit.framework.TestCase;

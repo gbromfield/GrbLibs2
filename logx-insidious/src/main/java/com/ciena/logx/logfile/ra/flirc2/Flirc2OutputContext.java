@@ -1,8 +1,8 @@
-package com.ciena.logx.logfile.ra.insidious;
+package com.ciena.logx.logfile.ra.flirc2;
 
 import com.ciena.logx.LogX;
 import com.ciena.logx.LogXProperties;
-import com.ciena.logx.logfile.ra.insidious.logrecord.TL1LogRecordParser;
+import com.ciena.logx.logfile.ra.flirc2.logrecord.TL1LogRecordParser;
 import com.ciena.logx.output.OutputContext;
 import com.ciena.logx.output.OutputRecord;
 import com.ciena.logx.output.OutputRecordSet;
@@ -15,10 +15,10 @@ import java.util.*;
 /**
  * Created by gbromfie on 9/2/16.
  */
-public class InsidiousOutputContext implements OutputContext {
+public class Flirc2OutputContext implements OutputContext {
     final static public SimpleDateFormat DateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss_SSS");
 
-    private InsidiousLogXProperties _props;
+    private Flirc2LogXProperties _props;
     private File _capOutputFile;
     private PrintWriter _capOutputWriter;
     private OutputRecordSet _logItems;
@@ -26,7 +26,7 @@ public class InsidiousOutputContext implements OutputContext {
     private HashMap<String, Object> _statsMap;
     private String _buffer;
 
-    public InsidiousOutputContext(InsidiousLogXProperties props) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+    public Flirc2OutputContext(Flirc2LogXProperties props) throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         _props = props;
         if (_props.getRecordingFilename() == null) {
             throw new IllegalArgumentException("Error: No output recording file specified, must specify -cap");
@@ -171,8 +171,8 @@ public class InsidiousOutputContext implements OutputContext {
     }
 
     public static void main(String[] args) {
-        InsidiousLogXCommandLineProcessor clp = new InsidiousLogXCommandLineProcessor();
-        InsidiousLogXProperties props = (InsidiousLogXProperties)clp.parse(args);
+        Flirc2LogXCommandLineProcessor clp = new Flirc2LogXCommandLineProcessor();
+        Flirc2LogXProperties props = (Flirc2LogXProperties)clp.parse(args);
 
         if (props.getUnknownArg() != null) {
             System.out.println(String.format("Unknown argument: \"%s\"", props.getUnknownArg()));
@@ -193,9 +193,9 @@ public class InsidiousOutputContext implements OutputContext {
             System.exit(1);
         }
 
-        InsidiousOutputContext ctx = null;
+        Flirc2OutputContext ctx = null;
         try {
-            ctx = new InsidiousOutputContext(props);
+            ctx = new Flirc2OutputContext(props);
             LogX logx = new LogX(props);
             logx.run();
         } catch (Exception e) {

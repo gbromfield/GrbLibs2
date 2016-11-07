@@ -1,11 +1,11 @@
-package com.ciena.logx.logfile.ra.insidious;
+package com.ciena.logx.logfile.ra.flirc2;
 
 import com.ciena.logx.LogXPropertiesImpl;
 
 /**
  * Created by gbromfie on 11/2/16.
  */
-public class InsidiousLogXPropertiesImpl extends LogXPropertiesImpl implements InsidiousLogXProperties {
+public class Flirc2LogXPropertiesImpl extends LogXPropertiesImpl implements Flirc2LogXProperties {
 
     private String _recordingFilename = null;
 

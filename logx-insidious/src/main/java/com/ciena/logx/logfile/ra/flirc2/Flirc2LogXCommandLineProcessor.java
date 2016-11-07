@@ -1,4 +1,4 @@
-package com.ciena.logx.logfile.ra.insidious;
+package com.ciena.logx.logfile.ra.flirc2;
 
 import com.ciena.logx.CommandLineProcessor;
 import com.ciena.logx.LogXProperties;
@@ -6,23 +6,23 @@ import com.ciena.logx.LogXProperties;
 /**
  * Created by gbromfie on 11/1/16.
  */
-public class InsidiousLogXCommandLineProcessor extends CommandLineProcessor {
+public class Flirc2LogXCommandLineProcessor extends CommandLineProcessor {
 
-    public InsidiousLogXCommandLineProcessor() {
+    public Flirc2LogXCommandLineProcessor() {
         super();
         syntax.add("-rec recordingFile (output recording file)\n");
     }
 
     @Override
     protected LogXProperties createProperties() {
-        return new InsidiousLogXPropertiesImpl();
+        return new Flirc2LogXPropertiesImpl();
     }
 
     @Override
     protected int parseArgument(LogXProperties props, String[] args, int index) {
         if (args[index].equalsIgnoreCase("-rec")) {
             processingInputFiles = false;
-            ((InsidiousLogXProperties)props).setRecordingFilename(args[index + 1]);
+            ((Flirc2LogXProperties)props).setRecordingFilename(args[index + 1]);
             return index + 2;
 //        } else if (args[index].equalsIgnoreCase("-session")) {
 //            if (props.parsers == null) {

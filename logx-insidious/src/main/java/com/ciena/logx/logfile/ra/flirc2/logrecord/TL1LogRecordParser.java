@@ -1,4 +1,4 @@
-package com.ciena.logx.logfile.ra.insidious.logrecord;
+package com.ciena.logx.logfile.ra.flirc2.logrecord;
 
 import com.ciena.logx.logrecord.BaseLogRecordParser;
 import com.ciena.logx.logrecord.LogRecord;
