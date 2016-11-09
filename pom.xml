@@ -28,6 +28,6 @@
     <module>bufferutils</module>
     <module>logx-core</module>
     <module>logx-puml</module>
-    <module>logx-insidious</module>
+    <module>logx-flirc2</module>
   </modules>
 </project>

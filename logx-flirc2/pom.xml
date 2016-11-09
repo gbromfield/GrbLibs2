@@ -8,9 +8,9 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <groupId>com.ciena</groupId>
-  <artifactId>logx-insidious</artifactId>
+  <artifactId>logx-flirc2</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>logx-insidious</name>
+  <name>logx-flirc2</name>
   <url>http://maven.apache.org</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
